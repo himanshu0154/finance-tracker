@@ -11,7 +11,7 @@ Helps you track your **income**, **expenses**, and calculate your **net balance*
 - View all transaction history.
 - Check current balance.
 - User-friendly menu-driven system.
-- Data persistence using `transactions.txt`.
+- Data persistence using `transactions.json`.
 
 ---
 
