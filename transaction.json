@@ -1,0 +1,23 @@
+{
+    "15-05-2025[19:15]": {
+        "Amount": 2000,
+        "Type": "Expanse",
+        "Category": "Food"
+    },
+    "15-05-2025[19:16]": {
+        "Amount": 4000,
+        "Type": "Expanse",
+        "Category": "Clothes",
+        "Note": "well it was a treat"
+    },
+    "15-05-2025[19:17]": {
+        "Amount": 200,
+        "Type": "Income",
+        "Category": "Found"
+    },
+    "15-05-2025[19:20]": {
+        "Amount": 2000,
+        "Type": "Expanse",
+        "Category": "Food"
+    }
+}

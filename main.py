@@ -105,12 +105,20 @@ def view_file():
     i = 0
     for date, history in transactions.items():
         i = i + 1
-        if "Note" in history:
-            print("-----------------------")
-            print(f"{i}. {date}\n   Amount spend is {history['Amount']} for {history['Category']}\n   p.s - {history['Note']}")
+        if history['Type'].lower() == "expanse":
+            if "Note" in history:
+                print("--------------------------------------------")
+                print(f"{i}. {date}\n   Amount spend is {history['Amount']} for {history['Category']}\n   p.s - {history['Note']}")
+            else:
+                print("--------------------------------------------")
+                print(f"{i}. {date}\n   Amount spend is {history['Amount']} for {history['Category']}")
         else:
-            print("-----------------------")
-            print(f"{i}. {date}\n   Amount spend is {history['Amount']} for {history['Category']}")
+            if "Note" in history:
+                print("--------------------------------------------")
+                print(f"{i}. {date}\n   Amount got is {history['Amount']} for {history['Category']}\n   p.s - {history['Note']}")
+            else:
+                print("--------------------------------------------")
+                print(f"{i}. {date}\n   Amount got is {history['Amount']} for {history['Category']}")
 
 # This func is to load the expanse file
 def load_to_expanse():
@@ -136,8 +144,8 @@ def loadExpanse(type, category, amount):
             expanse[category] = amount
         save_to_expanse(expanse)
 
-    elif type.lower() == "income":
-        pass
+    else:
+        return
 
 def show_expanse():
     print("These are your Expanses - ")
