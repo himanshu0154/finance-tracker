@@ -8,7 +8,9 @@ salary_file = "salary.json"
 
 # This func is to log date while logging the transaction
 def date():
+    # This is  a list of months to show which month user has chosen
     months = {1:"January", 2:"February", 3:"March", 4:"April", 5:"May", 6:"June", 7:"July", 8:"August", 9:"September", 10:"October", 11:"November", 12:"December"}
+    # This func is used to get input in while selecting dates 
     def get_int(prompt, min_value, max_value, message):
         while True:
             try:
@@ -21,10 +23,10 @@ def date():
                     continue
             except ValueError:
                 print("Invalid input, please input a number!")
-
+    # This func is for leap years
     def is_leap(year):
         return (year % 2 )
-    
+    # This func is to get day range according to the month and the year
     def get_day(month, year):
         if month in [1,3,5,7,8,10,12]:
              return get_int("Enter the day here", 1, 31, "The day is" )
@@ -35,16 +37,17 @@ def date():
                 return get_int("Enter the day here", 1, 28, "The day is")
         else:
              return get_int("Enter the day here", 1, 30, "The day is")
-
+    #this func is to let user selct a date whether be today or specific
     def logTime():
             print("--------------------------------------------")
             print("Enter the transaction_time here:\n1. today\n2. select specific transaction_time")
             transaction_time = int(input("-> (from 1 and 2)  "))
+            # This is user wants to select todays date
             if transaction_time == 1:
                 transaction_time = datetime.now().strftime("%d-%m-%Y[%H:%M]")
                 print(f"Entered transaction_time is {transaction_time}")
                 return transaction_time
-
+            # This if user wants to select a specific date
             elif transaction_time == 2:
                 year = get_int("Enter the year here, eg. 2003 ", 2000, int(datetime.now().strftime("%Y")), "The year is ")
                 month = get_int("Enter the month here, eg. 11 ", 1, 12, "The month is")
@@ -56,10 +59,8 @@ def date():
                 transaction_time = f"{year}-{month}-{day}[{hour}:{minute}]"
                 print(f"Entered transaction_time is {transaction_time}")
                 return transaction_time
-
             else:
                 print("Invalid input - please enter from 1 and 2")
-
     return logTime()
 
 #this func is to load file for transaction.json
@@ -74,57 +75,6 @@ def load_to_file():
 def save_to_file(transactions):
     with open(file_name, 'w') as file:
         json.dump(transactions, file, indent=4)
-
-def load_to_expanse():
-    try:
-        with open(expanse_file, 'r') as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_to_expanse(expanse):
-    with open(expanse_file, 'w') as file:
-        json.dump(expanse, file, indent=4)
-        
-def load_to_salary():
-    try:
-        with open(salary_file, 'r') as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_to_salary(salary):
-    with open(salary_file, 'w') as file:
-        json.dump(salary, file, indent=4)
-
-def deduct_salary(amount, type):
-    salary = load_to_salary()
-    if type.lower() == "expanse":
-        if "Remaining salary" in salary.keys():
-            salary["Remaining salary"] -= amount
-        else:
-            salary["Remaining salary"] = salary["Initial Salary"] - amount
-    elif type.lower() == "income":
-        if "Remaining salary" in salary.keys():
-            salary["Remaining salary"] = salary["Initial Salary"] + amount
-        else:
-            salary["Remaining salary"] += amount
-    else:
-        return
-    save_to_salary(salary)
-    
-def loadExpanse(type, category, amount):
-    expanse = load_to_expanse()
-    if type.lower() == "expanse":
-        if category in expanse.keys():
-            expanse[category]  += amount
-            
-        else:
-            expanse[category] = amount
-        save_to_expanse(expanse)
-
-    elif type.lower() == "income":
-        pass
 
 def transaction_logging_system(transaction_time, amount, type, category):
     notes_input = input("do you want to leave a note( y for yes else just press any key )\n-> ")
@@ -161,7 +111,34 @@ def view_file():
         else:
             print("-----------------------")
             print(f"{i}. {date}\n   Amount spend is {history['Amount']} for {history['Category']}")
-    
+
+# This func is to load the expanse file
+def load_to_expanse():
+    try:
+        with open(expanse_file, 'r') as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+# This func is to save expanses in the expanse file
+def save_to_expanse(expanse):
+    with open(expanse_file, 'w') as file:
+        json.dump(expanse, file, indent=4)
+
+# This func is to manage expanses
+def loadExpanse(type, category, amount):
+    expanse = load_to_expanse()
+    if type.lower() == "expanse":
+        if category in expanse.keys():
+            expanse[category]  += amount
+            
+        else:
+            expanse[category] = amount
+        save_to_expanse(expanse)
+
+    elif type.lower() == "income":
+        pass
+
 def show_expanse():
     print("These are your Expanses - ")
     expanse = load_to_expanse()
@@ -170,6 +147,37 @@ def show_expanse():
         i = i+1
         print("--------------------------------------------")
         print(f"{i}. {key.title()} - {value} Rs")
+        
+# This func is to load the salary file    
+def load_to_salary():
+    try:
+        with open(salary_file, 'r') as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+# This func is to save the salary in the salary file
+def save_to_salary(salary):
+    with open(salary_file, 'w') as file:
+        json.dump(salary, file, indent=4)
+
+#This func is to manage remaining salary
+def manage_salary(amount, type):
+    salary = load_to_salary()
+    if type.lower() == "expanse":
+        if "Remaining salary" in salary.keys():
+            salary["Remaining salary"] -= amount
+        else:
+            salary["Remaining salary"] = salary["Initial Salary"] - amount
+    elif type.lower() == "income":
+        if "Remaining salary" in salary.keys():
+            salary["Remaining salary"] = salary["Initial Salary"] + amount
+        else:
+            salary["Remaining salary"] += amount
+    else:
+        return
+    save_to_salary(salary)
+
 
 def show_income():
     salary = load_to_salary()
@@ -221,7 +229,7 @@ Please select an option by entering 1, 2, 3, 4, 5, or 6.
                     print(f"Entered category is {category.title()}")
 
                     transaction_logging_system(transaction_time, amount, type, category)
-                    deduct_salary(amount, type)
+                    manage_salary(amount, type)
                     loadExpanse(type, category, amount)
 
                 elif user == 2:
