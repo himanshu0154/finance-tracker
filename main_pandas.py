@@ -1,10 +1,42 @@
-from datetime import datetime
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
 import json
+import numpy as np
+from datetime import datetime
 import sys
+import os
+from tabulate import tabulate
 
-transaction_file = "transaction.json"
-expanse_file = "expanse.json"
-salary_file = "salary.json"
+salary_file = "salary_pandas.json"
+data_file = r"C:\Users\Himanshu\OneDrive\Documents\my documents\python course\Python_Projects\FinanceTracker\data.json"
+if os.path.exists(data_file) and os.path.getsize(data_file) > 0:
+    df = pd.read_json(data_file)
+else:
+    df = pd.DataFrame()  # start with empty DataFrame
+
+
+
+def load_to_salary(salary_file):
+    try:
+        with open(salary_file, 'r') as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_to_data(data):
+    with open(data_file, 'w') as file:
+        json.dump(data, file, indent=4)
+
+def load_to_data():
+    try:
+        with open(data_file, 'r') as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+salary_data = load_to_salary(salary_file)
+
 # This func is to log date while logging the transaction
 def date():
     # This is  a list of months to show which month user has chosen
@@ -36,6 +68,7 @@ def date():
                 return get_int("Enter the day here", 1, 28, "The day is")
         else:
              return get_int("Enter the day here", 1, 30, "The day is")
+
     #this func is to let user selct a date whether be today or specific
     def logTime():
             print("--------------------------------------------")
@@ -58,110 +91,85 @@ def date():
                 transaction_time = f"{year}-{month}-{day}[{hour}:{minute}]"
                 print(f"Entered transaction_time is {transaction_time}")
                 return transaction_time
+
             else:
                 print("Invalid input - please enter from 1 and 2")
     return logTime()
 
-#this func is to load json file
-def load_to_file():
-    try:
-        with open(transaction_file, 'r') as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
 
-#this func is to save json file
-def save_to_file(transactions):
-    with open(transaction_file, 'w') as file:
-        json.dump(transactions, file, indent=4)
-
-def transaction_logging_system(transaction_time, amount, type, category):
-    notes_input = input("do you want to leave a note( y for yes else just press any key )\n-> ")
-    if notes_input == "y":
-        print("--------------------------------------------")
-        note = input("leave a note: ")
-        transaction_history = {
-            "Amount" : amount,
-            "Type" : type.title(),
-            "Category" : category.title(),
-            "Note" : note,  
+def data_logging_system(transaction_time, amount, type, category):
+    data = load_to_data()
+    if not data:
+        data = {
+            'Dates' : [],
+            "Amount" : [],
+            "Type" : [],
+            "Category" : [],
+            "Remaining salary" : []
         }
-    else:
-        print("Thanks for your time, hope you have a good time")
-        transaction_history = {
-                "Amount" : amount,
-                "Type" : type.title(),
-                "Category" : category.title(),
-            }
-        
+    data['Dates'].append(transaction_time)
+    data['Amount'].append(amount)
+    data['Type'].append(type)
+    data['Category'].append(category)
+    data['Remaining salary'].append(salary_data['Remaining salary'])
     # This is to log in or add those transactions in the transaction.json file
-    transactions = load_to_file()
-    transactions[transaction_time] = transaction_history
-    save_to_file(transactions)
+    save_to_data(data)
 
-def view_file():
-    transactions = load_to_file()
-    i = 0
-    for date, history in transactions.items():
-        i = i + 1
-        if history['Type'].lower() == "expanse":
-            if "Note" in history:
-                print("--------------------------------------------")
-                print(f"{i}. {date}\n   Amount spend is {history['Amount']} for {history['Category']}\n   p.s - {history['Note']}")
-            else:
-                print("--------------------------------------------")
-                print(f"{i}. {date}\n   Amount spend is {history['Amount']} for {history['Category']}")
-        else:
-            if "Note" in history:
-                print("--------------------------------------------")
-                print(f"{i}. {date}\n   Amount got is {history['Amount']} for {history['Category']}\n   p.s - {history['Note']}")
-            else:
-                print("--------------------------------------------")
-                print(f"{i}. {date}\n   Amount got is {history['Amount']} for {history['Category']}")
 
-# This func is to load the expanse file
-def load_to_expanse():
-    try:
-        with open(expanse_file, 'r') as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+def show_data(df):
+    df = df[['Dates', 'Type', 'Category', 'Amount', 'Remaining salary']]
+    print(tabulate(df, headers='keys', tablefmt='fancy_grid'))
 
-# This func is to save expanses in the expanse file
-def save_to_expanse(expanse):
-    with open(expanse_file, 'w') as file:
-        json.dump(expanse, file, indent=4)
 
-# This func is to manage expanses
-def loadExpanse(type, category, amount):
-    expanse = load_to_expanse()
-    if type.lower() == "expanse":
-        if category in expanse.keys():
-            expanse[category]  += amount
-            
-        else:
-            expanse[category] = amount
-        save_to_expanse(expanse)
 
+# Categorizing expanses
+def show_expanses():
+    expanses = df.query('Type == "expanse"')
+    expanses = expanses.groupby(['Type','Category'])['Amount'].sum().reset_index()
+    print(tabulate(expanses, headers='keys', tablefmt='fancy_grid'))
+
+    if len(expanses['Category']) > 5:
+        sns.barplot(data=expanses, x='Category', y='Amount', hue='Category', palette='rocket')
+        for idx in range(len(expanses['Category'])):
+            amount = expanses['Amount'].iloc[idx]
+            plt.text(idx, amount + 50, str(int(amount)), ha='center')
+        plt.axhline(y=salary_data['Initial Salary'], color='red', linestyle='--', linewidth=2, label="Salary")
+        plt.legend()
+        max_amount = max(salary_data['Initial Salary'], salary_data['Remaining salary'])
+        plt.yticks(np.arange(0, max_amount + 10000, 5000))
+        plt.grid(True)
     else:
-        return
+        plt.figure(figsize=(10,4))
+        plt.subplot(1, 2, 1)  # (rows, cols, plot_no)
+        sns.barplot(data=expanses, x='Category', y='Amount', hue='Category', palette='rocket')
+        for idx in range(len(expanses['Category'])):
+            amount = expanses['Amount'].iloc[idx]
+            plt.text(idx, amount + 1000, str(int(amount)), ha='center')
+        plt.axhline(y=salary_data['Initial Salary'], color='red', linestyle='--', linewidth=2, label="Salary")
+        plt.axhline(y=salary_data['Remaining salary'], color='blue', linestyle='-.', linewidth=2, label="Remaining salary")
+        plt.legend()
+        max_amount = max(salary_data['Initial Salary'], salary_data['Remaining salary'])
+        plt.yticks(np.arange(0, max_amount + 10000, 5000))
 
-def show_expanse():
-    print("These are your Expanses - ")
-    expanse = load_to_expanse()
-    i = 0
-    for key, value in expanse.items():
-        i = i+1
-        print("--------------------------------------------")
-        print(f"{i}. {key.title()} - {value} Rs")
-        
-# This func is to load the salary file    
-def load_to_salary():
-    try:
-        with open(salary_file, 'r') as file:
-            return json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+        plots = [expanse for expanse in expanses['Amount']]
+        plots.append(salary_data['Remaining salary'])
+        labels = [categories.title() for categories in expanses['Category']]
+        labels.append("Remaining Salary")
+        colors = sns.color_palette('Set2', len(plots)).as_hex()  
+        plt.subplot(1, 2, 2)
+        plt.pie(plots, labels=labels, autopct="%1.1f%%", colors=colors, wedgeprops={'edgecolor': 'black', 'linewidth': 1, 'linestyle': '--'})
+        plt.tight_layout()
+        plt.show()
+
+
+# Categorizing incomes
+def show_income():
+    incomes = df.query('Type == "income"')
+    incomes = incomes.groupby(['Type','Category'])['Amount'].sum().reset_index()
+    print(tabulate(incomes, headers='keys', tablefmt='fancy_grid'))
+
+
+
 
 # This func is to save the salary in the salary file
 def save_to_salary(salary):
@@ -170,29 +178,19 @@ def save_to_salary(salary):
 
 #This func is to manage remaining salary
 def manage_salary(amount, type):
-    salary = load_to_salary()
     if type.lower() == "expanse":
-        if "Remaining salary" in salary.keys():
-            salary["Remaining salary"]-= amount
+        if salary_data["Remaining salary"] != 0:
+            salary_data["Remaining salary"] -= amount
         else:
-            salary["Remaining salary"] = salary["Initial Salary"] - amount
+            salary_data["Remaining salary"] = salary_data["Initial Salary"] - amount
     elif type.lower() == "income":
-        if "Remaining salary" in salary.keys():
-            salary["Remaining salary"] += amount
+        if salary_data["Remaining salary"] != 0:
+            salary_data['Remaining salary'] += amount
         else:
-            salary["Remaining salary"] = salary["Initial Salary"] + amount
+            salary_data['Remaining salary'] = salary_data["Initial Salary"] + amount
     else:
         return
-    save_to_salary(salary)
-
-
-def show_income():
-    salary = load_to_salary()
-    print("These are your Income info - ")
-    for key, value in salary.items():
-        print("--------------------------------------------")
-        print(f"{key.title()} - {value} Rs")
-
+    save_to_salary(salary_data)
 
 
 def trackerExecution():     
@@ -207,7 +205,7 @@ Welcome to Finance Tracker!
 4. Show my income
 5. Clear your history                  
 6. Exit the program
-                  
+
 Please select an option by entering 1, 2, 3, 4, 5, or 6.
 """, end=" ")
             try:
@@ -224,7 +222,7 @@ Please select an option by entering 1, 2, 3, 4, 5, or 6.
                             sys.exit()
                     except ValueError:
                         print("Invalid input - please input a valid integer")
-                        
+
                     print("--------------------------------------------")
                     type = input("enter the type here:\n-> (Expanse/Income) ")
                     if type in ["expanse", "income"]:
@@ -237,27 +235,34 @@ Please select an option by entering 1, 2, 3, 4, 5, or 6.
                     category = input("enter the category:\n-> ")
                     print(f"Entered category is {category.title()}")
 
-                    transaction_logging_system(transaction_time, amount, type, category)
                     manage_salary(amount, type)
-                    loadExpanse(type, category, amount)
+                    data_logging_system(transaction_time, amount, type, category)
 
                 elif user == 2:
-                    view_file()
+                    show_data(df)
 
                 elif user == 3:
-                    show_expanse()
+                    show_expanses()
 
                 elif user == 4:
                     show_income()
-                
+
                 elif user == 5:
-                    open(transaction_file, 'w').close()
-                    open(expanse_file, 'w').close()
+                    open(data_file, 'w').close()
                     open(salary_file, 'w').close()
-                    salary = load_to_salary()
-                    salary = {"Initial Salary": 0}
-                    save_to_salary(salary)
-                    
+
+                    data = {
+                        'Dates' : [],
+                        "Amount" : [],
+                        "Type" : [],
+                        "Category" : [],
+                        "Remaining salary" : []
+                    }
+                    save_to_data(data)
+                    salary_data = {"Initial Salary": 0, "Remaining salary": 0}  # reset in-memory dict too
+                    save_to_salary(salary_data)
+                    print("History cleared!!")
+                    sys.exit()
 
                 elif user == 6:
                     print("Good bye!\nThanks for your time..\nhope you have a good day...")
@@ -265,18 +270,24 @@ Please select an option by entering 1, 2, 3, 4, 5, or 6.
 
                 else:
                     print("Please choose from given option!")
-                    
+
             except ValueError:
                 print("Invalid input - please choose from valid options...")
 
 if __name__=="__main__":
-    while True:
-        salary = load_to_salary()
-        if salary["Initial Salary"] == 0:
-            print("Please, Enter the salary first!")
-            setSalary = int(input("Enter your salary -\n-> "))
-            salary["Initial Salary"] = setSalary
-            save_to_salary(salary)
-            trackerExecution()
-        else:
-            trackerExecution()
+        while True:
+            if salary_data['Initial Salary'] == 0:
+                print("Please, Enter the salary first!")
+                setSalary = int(input("Enter your salary -\n-> "))
+                salary_data['Initial Salary'] = setSalary
+                save_to_salary(salary_data)
+                trackerExecution()
+            else:
+                trackerExecution()
+
+
+
+
+
+
+
